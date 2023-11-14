@@ -6,8 +6,10 @@
 #include "MotorShield.h" 
 #include "HardwareSetup.h"
 
-#define NUM_INPUTS 11
+#define NUM_INPUTS 13
 #define NUM_OUTPUTS 9
+
+#define PULSE_TO_RAD (2.0f*3.14159f / 1200.0f)
 
 float  pi = 3.1415; 
 
@@ -46,6 +48,8 @@ float K2 = 0;
 float D2 = 0;
 
 float desired_forearm = 0; 
+float th1_i = 0; 
+float the2_i = 0; 
 
 Serial pc(USBTX, USBRX);    // USB Serial Terminal
 ExperimentServer server;    // Object that lets us communicate with MATLAB
@@ -62,24 +66,24 @@ MotorShield motorShield(24000); // initialize the motor shield with a period of 
 // function to calculate motor voltage according to current control law
 void current_control() {
     float error1 = 0;
-    theta1 = encoderA.getPulses()*(6.2831/1200.0);
-    velocity1 = encoderA.getVelocity()*(6.2831/1200.0);
+    theta1 = encoderA.getPulses()*(PULSE_TO_RAD)+th1_i;
+    velocity1 = encoderA.getVelocity()*(PULSE_TO_RAD);
     current1 = -(motorShield.readCurrentA()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
     error1 = current_d1 - current1;
     sumerror1 = sumerror1 + error1;
 
     // volt = 0; // EDIT THIS to use your current control law from Lab 2
     //voltage = kp*error + kd*(error-pasterror) + ki*sumerror;
-    volt1 = R*current_d1 + kp*(current_d1 - current1) + ki*sumerror1 + kb*velocity1;
+    volt1 = R*current_d1 + kp*(error1) + ki*sumerror1 + kb*velocity1;
 
     float error2 = 0;
-    theta2 = encoderB.getPulses()*(6.2831/1200.0);
-    velocity2 = encoderB.getVelocity()*(6.2831/1200.0);
+    theta2 = encoderB.getPulses()*PULSE_TO_RAD+th2_i;
+    velocity2 = encoderB.getVelocity()*PULSE_TO_RAD;
     current2 = -(motorShield.readCurrentB()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
     error2 = current_d2 - current2;
     sumerror2 = sumerror2 + error2;
 
-    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*sumerror2+ kb*velocity1;
+    volt2 = R*current_d2 + kp2*(error2) + ki2*sumerror2+ kb*velocity1;
    
     duty  = volt1/12.0;
     if (duty >  1) {
@@ -112,7 +116,6 @@ void current_control() {
     }
 }
 
-
 int main (void) {
     // Link the terminal with our server and start it up
     server.attachTerminal(pc);
@@ -141,6 +144,8 @@ int main (void) {
             D2 = input_params[9];
 
             desired_forearm = input_params[10];
+            th1_i = input_params[11]; 
+            th2_i = input_params[12];
 
             // Run current controller at 10kHz
             ControlLoop.attach(&current_control,0.0001);
@@ -172,7 +177,7 @@ int main (void) {
 
                 tau_d2 = -K*theta2 - D*velocity2 + b * velocity2;
 
-                               // control limits 
+                // control limits 
                 if (theta2 < 0 || theta1 > desired_forearm + pi/3){
                     tau_d1 = 0; // no torque if past limit 
                 }
