@@ -6,8 +6,10 @@
 #include "MotorShield.h" 
 #include "HardwareSetup.h"
 
-#define NUM_INPUTS 10
+#define NUM_INPUTS 11
 #define NUM_OUTPUTS 9
+
+float  pi = 3.1415; 
 
 //Measured values
 float velocity1 = 0;
@@ -42,6 +44,8 @@ float K = 0;
 float D = 0;
 float K2 = 0;
 float D2 = 0;
+
+float desired_forearm = 0; 
 
 Serial pc(USBTX, USBRX);    // USB Serial Terminal
 ExperimentServer server;    // Object that lets us communicate with MATLAB
@@ -136,6 +140,8 @@ int main (void) {
             K2 = input_params[8];
             D2 = input_params[9];
 
+            desired_forearm = input_params[10];
+
             // Run current controller at 10kHz
             ControlLoop.attach(&current_control,0.0001);
            
@@ -156,12 +162,21 @@ int main (void) {
                 // current_d = 0; // Set commanded current from impedance controller here.
                 tau_d1 = -K*theta1 - D*velocity1 + b * velocity1;
 
-                // control 
+                // control limits 
+                if (theta1 < -pi/6 || theta1 > pi/6){
+                    tau_d1 = 0; // no torque if past limit 
+                }
 
                 // tau_d = -K*theta + b*velocity;
                 current_d1 = tau_d1/kb; // Set commanded current from impedance controller here.
 
                 tau_d2 = -K*theta2 - D*velocity2 + b * velocity2;
+
+                               // control limits 
+                if (theta2 < 0 || theta1 > desired_forearm + pi/3){
+                    tau_d1 = 0; // no torque if past limit 
+                }
+
                 current_d2 = tau_d2/kb;
                
                 // Send data to MATLAB
