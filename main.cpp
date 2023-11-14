@@ -11,42 +11,43 @@
 
 #define PULSE_TO_RAD (2.0f*3.14159f / 1200.0f)
 
+// variables 
 float  pi = 3.1415; 
 
-//Measured values
+//motor 1 
+float current_d1 = 0;
+float kp = 0;
+float ki = 0;
 float velocity1 = 0;
 float current1 = 0;
 float theta1 = 0;
+float volt1 = 0;
+float duty = 0; 
+float sumerror1 = 0;
+float tau_d1 = 0;
+float K = 0;
+float D = 0;
+
+// motor 2 
+float current_d2 = 0;
+float kp2 = 0;
+float ki2 = 0;
 float velocity2 = 0;
 float current2 = 0;
 float theta2 = 0;
-
-//Set values
-float current_d1 = 0;
-float current_d2 = 0;
-float kp = 0;
-float ki = 0;
-float kp2 = 0;
-float ki2 = 0;
-
-//Controller values
-float volt1 = 0;
+float duty2 = 0; 
 float volt2 = 0;
-float duty = 0;
-float duty2 = 0;
-
-float R = 3.5;
-float kb = 0.16;
-float sumerror1 = 0;
-float sumerror2=0;
-float tau_d1 = 0;
+float sumerror2 = 0;
 float tau_d2;
-float b = .00032;
-float K = 0;
-float D = 0;
 float K2 = 0;
 float D2 = 0;
 
+// general motor 
+float R = 3.5;
+float kb = 0.16;
+float b = .00032;
+
+// other parameters 
 float desired_forearm = 0; 
 float th1_i = 0; 
 float the2_i = 0; 
@@ -58,13 +59,12 @@ Ticker ControlLoop;         // Ticker to run current controller at high frequenc
 
 QEI encoderA(PE_9,PE_11, NC, 1200, QEI::X4_ENCODING);  // MOTOR A ENCODER (no index, 1200 counts/rev, Quadrature encoding)
 QEI encoderB(PA_5, PB_3, NC, 1200, QEI::X4_ENCODING);  // MOTOR B ENCODER (no index, 1200 counts/rev, Quadrature encoding)
-//QEI encoderC(PC_6, PC_7, NC, 1200, QEI::X4_ENCODING);  // MOTOR C ENCODER (no index, 1200 counts/rev, Quadrature encoding)
-//QEI encoderD(PD_12, PD_13, NC, 1200, QEI::X4_ENCODING);// MOTOR D ENCODER (no index, 1200 counts/rev, Quadrature encoding)
 
 MotorShield motorShield(24000); // initialize the motor shield with a period of 12000 clock ticks or ~10kHZ
 
 // function to calculate motor voltage according to current control law
 void current_control() {
+    // motor 1 
     float error1 = 0;
     theta1 = encoderA.getPulses()*(PULSE_TO_RAD)+th1_i;
     velocity1 = encoderA.getVelocity()*(PULSE_TO_RAD);
@@ -76,6 +76,7 @@ void current_control() {
     //voltage = kp*error + kd*(error-pasterror) + ki*sumerror;
     volt1 = R*current_d1 + kp*(error1) + ki*sumerror1 + kb*velocity1;
 
+    // motor 2
     float error2 = 0;
     theta2 = encoderB.getPulses()*PULSE_TO_RAD+th2_i;
     velocity2 = encoderB.getVelocity()*PULSE_TO_RAD;
@@ -85,6 +86,7 @@ void current_control() {
 
     volt2 = R*current_d2 + kp2*(error2) + ki2*sumerror2+ kb*velocity1;
    
+   // motor within the duty 
     duty  = volt1/12.0;
     if (duty >  1) {
         duty =  1;
@@ -129,20 +131,21 @@ int main (void) {
         // Run experiment every time input parameters are received from MATLAB
         if (server.getParams(input_params,NUM_INPUTS)) {
             // Unpack inputs
+            // motor 1
             kp = input_params[0];
             ki = input_params[1];
             current_d1 = input_params[2];
-
             K = input_params[3];
             D = input_params[4];
 
+            // motor 2
             kp2 = input_params[5];
             ki2 = input_params[6];
             current_d2 = input_params[7];
-
             K2 = input_params[8];
             D2 = input_params[9];
 
+            // set up variables 
             desired_forearm = input_params[10];
             th1_i = input_params[11]; 
             th2_i = input_params[12];
@@ -165,6 +168,7 @@ int main (void) {
             while (t.read() < 5) {
                 // Perform impedance control loop logic to calculate desired current
                 // current_d = 0; // Set commanded current from impedance controller here.
+                // motor 1
                 tau_d1 = -K*theta1 - D*velocity1 + b * velocity1;
 
                 // control limits 
@@ -175,6 +179,7 @@ int main (void) {
                 // tau_d = -K*theta + b*velocity;
                 current_d1 = tau_d1/kb; // Set commanded current from impedance controller here.
 
+                // motor 2
                 tau_d2 = -K*theta2 - D*velocity2 + b * velocity2;
 
                 // control limits 
