@@ -40,7 +40,7 @@ float volt2 = 0;
 float sumerror2 = 0;
 float tau_d2;
 float K2 = 0;
-float D2 = 0;
+float D_2 = 0;
 
 // general motor 
 float R = 3.5;
@@ -143,7 +143,7 @@ int main (void) {
             ki2 = input_params[6];
             current_d2 = input_params[7];
             K2 = input_params[8];
-            D2 = input_params[9];
+            D_2 = input_params[9];
 
             // set up variables 
             desired_forearm = input_params[10];
