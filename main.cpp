@@ -168,7 +168,7 @@ int main (void) {
                 tau_d1 = -K_1*theta1 - D_1*velocity1 + b * velocity1;
 
                 // control limits 
-                if (theta1 < -pi/6 || theta1 > pi/6){
+                if (theta1 < -pi/3 || theta1 > desired_forearm + pi/3){
                     tau_d1 = 0; // no torque if past limit 
                 }
 
@@ -178,8 +178,8 @@ int main (void) {
                 tau_d2 = -K_2*theta2 - D_2*velocity2 + b * velocity2;
 
                 // control limits 
-                if (theta2 < 0 || theta1 > desired_forearm + pi/3){
-                    tau_d1 = 0; // no torque if past limit 
+                if (theta2 < -pi/3 || theta2 > pi/3){
+                    tau_d2 = 0; // no torque if past limit 
                 }
 
                 current_d2 = tau_d2/kb;
