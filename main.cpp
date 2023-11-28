@@ -186,7 +186,7 @@ int main (void) {
             // motorShield.motorAWrite(DUTY CYCLE, DIRECTION), DIRECTION = 0 is forward, DIRECTION = 1 is backwards.
              
             // Run experiment
-            while (t.read() < 5) {
+            while (t.read() < 10) {
                 // Perform impedance control loop logic to calculate desired current
                 // current_d = 0; // Set commanded current from impedance controller here.
                 tau_d1 = -K*theta1 - D*velocity1 + b * velocity1;
