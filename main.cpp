@@ -6,7 +6,7 @@
 #include "MotorShield.h" 
 #include "HardwareSetup.h"
 
-#define NUM_INPUTS 11
+#define NUM_INPUTS 13
 #define NUM_OUTPUTS 11
 
 // (motor) constants 
@@ -40,11 +40,15 @@ float duty = 0;
 float duty2 = 0;
 
 float R = 3.5;
+float error1 = 0; 
+float error2 = 0; 
 float sumerror1 = 0;
 float sumerror2=0;
 float tau_d1 = 0;
 float tau_d2 = 0;
 float b = .00032;
+float t1_i = 0; 
+float t2_i = 0; 
 
 // spring coefficients for motors 
 float K = 0;
@@ -69,8 +73,7 @@ MotorShield motorShield(24000); // initialize the motor shield with a period of 
 // function to calculate motor voltage according to current control law
 void current_control() {
     // motor 1 
-    float error1 = 0;
-    theta1 = encoderA.getPulses()*(6.2831/1200.0);
+    theta1 = encoderA.getPulses()*(6.2831/1200.0) + t1_i;
     velocity1 = encoderA.getVelocity()*(6.2831/1200.0);
     current1 = -(motorShield.readCurrentA()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
     error1 = current_d1 - current1;
@@ -87,8 +90,7 @@ void current_control() {
     volt1 = R*current_d1 + kp*(current_d1 - current1) + ki*sumerror1 + kb*velocity1;
 
     // motor 2 
-    float error2 = 0;
-    theta2 = encoderB.getPulses()*(6.2831/1200.0);
+    theta2 = encoderB.getPulses()*(6.2831/1200.0) + t2_i;
     velocity2 = encoderB.getVelocity()*(6.2831/1200.0);
     current2 = -(motorShield.readCurrentB()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
     error2 = current_d2 - current2;
@@ -100,7 +102,7 @@ void current_control() {
         sumerror2 = -30000; 
     }
 
-    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*sumerror2+ kb*velocity1;
+    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*sumerror2+ kb*velocity2;
    
     duty  = volt1/12.0/4;
     //duty = 1; 
@@ -169,7 +171,9 @@ int main (void) {
 
             // angle 
             desired_forearm = input_params[10];
-
+            t1_i = input_params[11]; 
+            t2_i = input_params[12]; 
+            
             // Run current controller at 10kHz
             ControlLoop.attach(&current_control,0.0001);
            
@@ -196,7 +200,7 @@ int main (void) {
 
                 // should have hit the ball once get to 3*pi/4 
                 // resets desired angle to 0 
-                if (theta2 > 3*pi/4) {
+                if (theta1 > 3*pi/4) {
                     current_d1 = -km*constraint_angle + pi/3/kb;
                     tau_d1 = current_d1*kb; 
                 }
