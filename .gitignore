@@ -1,0 +1,10 @@
+BUILD
+.mbed
+compile_commands.json
+.clangd
+.cache
+ExperimentServer
+MotorShield
+QEI_pmw
+mbed-os
+dirstate
