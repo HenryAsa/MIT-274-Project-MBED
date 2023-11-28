@@ -191,13 +191,13 @@ int main (void) {
             // motorShield.motorAWrite(DUTY CYCLE, DIRECTION), DIRECTION = 0 is forward, DIRECTION = 1 is backwards.
              
             // Run experiment
-            while (t.read() < 10) {
+            while (t.read() < 5) {
                 // Perform impedance control loop logic to calculate desired current
                 // current_d = 0; // Set commanded current from impedance controller here.
-                tau_d1 = -K*(desired_forearm - theta1) - D*velocity1 + b * velocity1;
+                tau_d1 = K*(desired_forearm - theta1) - D*velocity1;
                 current_d1 = tau_d1/kb; // Set commanded current from impedance controller here.
 
-                tau_d2 = -K_2*(desired_hand - theta2) - D_2*velocity2 + b * velocity2;
+                tau_d2 = K_2*(desired_hand - theta2)  - D_2*velocity2;
                 current_d2 = tau_d2/kb;
 
                 // should have hit the ball once get to 3*pi/4 
