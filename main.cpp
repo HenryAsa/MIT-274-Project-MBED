@@ -6,22 +6,26 @@
 #include "MotorShield.h" 
 #include "HardwareSetup.h"
 
-#define NUM_INPUTS 13
-#define NUM_OUTPUTS 9
+#define NUM_INPUTS 11
+#define NUM_OUTPUTS 11
 
-#define PULSE_TO_RAD (2.0f*3.14159f / 1200.0f)
-
-float pi = 3.1415926; 
+// (motor) constants 
+float pi = 3.1415; 
+float km = 0.5; 
+float kb = 0.16; 
+float constraint_angle = 0; 
 
 //Measured values
+//motor 1
 float velocity1 = 0;
 float current1 = 0;
 float theta1 = 0;
+//motor 2
 float velocity2 = 0;
 float current2 = 0;
 float theta2 = 0;
 
-//Set values
+//Set values for PID 
 float current_d1 = 0;
 float current_d2 = 0;
 float kp = 0;
@@ -29,27 +33,26 @@ float ki = 0;
 float kp2 = 0;
 float ki2 = 0;
 
-//Controller values
+//Controller values. 
 float volt1 = 0;
 float volt2 = 0;
 float duty = 0;
 float duty2 = 0;
 
 float R = 3.5;
-float kb = 0.16;
 float sumerror1 = 0;
 float sumerror2=0;
 float tau_d1 = 0;
-float tau_d2;
+float tau_d2 = 0;
 float b = .00032;
-float K_1 = 0;
-float D_1 = 0;
-float K_2 = 0;
-float D_2;
+
+// spring coefficients for motors 
+float K = 0;
+float D = 0;
+float K2 = 0;
+float D2 = 0;
 
 float desired_forearm = 0; 
-float th1_i; 
-float th2_i; 
 
 Serial pc(USBTX, USBRX);    // USB Serial Terminal
 ExperimentServer server;    // Object that lets us communicate with MATLAB
@@ -65,27 +68,30 @@ MotorShield motorShield(24000); // initialize the motor shield with a period of 
 
 // function to calculate motor voltage according to current control law
 void current_control() {
+    // motor 1 
     float error1 = 0;
-    theta1 = encoderA.getPulses()*(PULSE_TO_RAD)+th1_i;
-    velocity1 = encoderA.getVelocity()*(PULSE_TO_RAD);
+    theta1 = encoderA.getPulses()*(6.2831/1200.0);
+    velocity1 = encoderA.getVelocity()*(6.2831/1200.0);
     current1 = -(motorShield.readCurrentA()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
     error1 = current_d1 - current1;
     sumerror1 = sumerror1 + error1;
 
     // volt = 0; // EDIT THIS to use your current control law from Lab 2
     //voltage = kp*error + kd*(error-pasterror) + ki*sumerror;
-    volt1 = R*current_d1 + kp*(error1) + ki*sumerror1 + kb*velocity1;
+    volt1 = R*current_d1 + kp*(current_d1 - current1) + ki*sumerror1 + kb*velocity1;
 
+    // motor 2 
     float error2 = 0;
-    theta2 = encoderB.getPulses()*PULSE_TO_RAD+th2_i;
-    velocity2 = encoderB.getVelocity()*PULSE_TO_RAD;
+    theta2 = encoderB.getPulses()*(6.2831/1200.0);
+    velocity2 = encoderB.getVelocity()*(6.2831/1200.0);
     current2 = -(motorShield.readCurrentB()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
     error2 = current_d2 - current2;
     sumerror2 = sumerror2 + error2;
 
-    volt2 = R*current_d2 + kp2*(error2) + ki2*sumerror2+ kb*velocity1;
+    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*sumerror2+ kb*velocity1;
    
-    duty  = volt1/12.0;
+    // duty  = volt1/12.0;
+    duty = 1; 
     if (duty >  1) {
         duty =  1;
     }
@@ -100,7 +106,8 @@ void current_control() {
         motorShield.motorAWrite(abs(duty), 1);
     }
 
-    duty2  = volt2/12.0;
+    //duty2  = volt2/12.0;
+    duty2 = 1; 
     if (duty2 >  1) {
         duty2 =  1;
     }
@@ -116,6 +123,7 @@ void current_control() {
     }
 }
 
+
 int main (void) {
     // Link the terminal with our server and start it up
     server.attachTerminal(pc);
@@ -129,23 +137,26 @@ int main (void) {
         // Run experiment every time input parameters are received from MATLAB
         if (server.getParams(input_params,NUM_INPUTS)) {
             // Unpack inputs
+            // motor 1 PID 
             kp = input_params[0];
             ki = input_params[1];
             current_d1 = input_params[2];
 
-            K_1 = input_params[3];
-            D_1 = input_params[4];
+            // motor 1 spring coefficients 
+            K = input_params[3];
+            D = input_params[4];
 
+            // motor 2 PID 
             kp2 = input_params[5];
             ki2 = input_params[6];
             current_d2 = input_params[7];
 
-            K_2 = input_params[8];
-            D_2 = input_params[9];
+            // motor 2 spring coefficients 
+            K2 = input_params[8];
+            D2 = input_params[9];
 
+            // angle 
             desired_forearm = input_params[10];
-            th1_i = input_params[11]; 
-            th2_i = input_params[12];
 
             // Run current controller at 10kHz
             ControlLoop.attach(&current_control,0.0001);
@@ -165,24 +176,18 @@ int main (void) {
             while (t.read() < 5) {
                 // Perform impedance control loop logic to calculate desired current
                 // current_d = 0; // Set commanded current from impedance controller here.
-                tau_d1 = -K_1*theta1 - D_1*velocity1 + b * velocity1;
-
-                // control limits 
-                if (theta1 < -pi/3 || theta1 > desired_forearm + pi/3){
-                    tau_d1 = 0; // no torque if past limit 
-                }
-
-                // tau_d = -K*theta + b*velocity;
+                tau_d1 = -K*theta1 - D*velocity1 + b * velocity1;
                 current_d1 = tau_d1/kb; // Set commanded current from impedance controller here.
 
-                tau_d2 = -K_2*theta2 - D_2*velocity2 + b * velocity2;
-
-                // control limits 
-                if (theta2 < -pi/3 || theta2 > pi/3){
-                    tau_d2 = 0; // no torque if past limit 
-                }
-
+                tau_d2 = -K*theta2 - D*velocity2 + b * velocity2;
                 current_d2 = tau_d2/kb;
+
+                // should have hit the ball once get to 3*pi/4 
+                // resets desired angle to 0 
+                if (theta2 > 3*pi/4) {
+                    current_d1 = -km*constraint_angle + pi/3/kb;
+                    tau_d1 = current_d1*kb; 
+                }
                
                 // Send data to MATLAB
                 float output_data[NUM_OUTPUTS];
@@ -195,6 +200,8 @@ int main (void) {
                 output_data[6] = velocity2;
                 output_data[7] = current2;
                 output_data[8] = volt2;
+                output_data[9] = tau_d1; 
+                output_data[10] = tau_d2; 
 
                 server.sendData(output_data,NUM_OUTPUTS);              
                 ThisThread::sleep_for(1); //run outer control loop at 1kHz
