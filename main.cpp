@@ -94,7 +94,6 @@ void current_control() {
     error2 = current_d2 - current2;
     sumerror2 = sumerror2 + error2;
 
-
     if (sumerror2 > 3000){
         sumerror2 = 3000;
     } else if (sumerror2 < -3000) { 
