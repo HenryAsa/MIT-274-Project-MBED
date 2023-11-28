@@ -28,10 +28,12 @@ float theta2 = 0;
 //Set values for PID 
 float current_d1 = 0;
 float current_d2 = 0;
-float kp = 0;
-float ki = 0;
-float kp2 = 0;
-float ki2 = 0;
+float current_Kp = 4.0f;         
+float current_Ki = 0.4f;   
+float kp = 4.0f;
+float ki = 0.4f;
+float kp2 = 4.0f;
+float ki2 = 0.4f;
 
 //Controller values. 
 float volt1 = 0;
@@ -105,7 +107,7 @@ void current_control() {
 
     volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*sumerror2+ kb*velocity2;
    
-    duty  = volt1/12.0/4;
+    duty  = volt1/12.0;
     //duty = 1; 
     if (duty >  1) {
         duty =  1;
@@ -121,7 +123,7 @@ void current_control() {
         motorShield.motorAWrite(abs(duty), 1);
     }
 
-    duty2  = volt2/12.0/4;    
+    duty2  = volt2/12.0;    
    // duty2 = 1; 
     if (duty2 >  1) {
         duty2 =  1;
@@ -153,8 +155,8 @@ int main (void) {
         if (server.getParams(input_params,NUM_INPUTS)) {
             // Unpack inputs
             // motor 1 PID 
-            kp = input_params[0];
-            ki = input_params[1];
+            // kp = input_params[0];
+            // ki = input_params[1];
             current_d1 = input_params[2];
 
             // motor 1 spring coefficients 
@@ -162,8 +164,8 @@ int main (void) {
             D = input_params[4];
 
             // motor 2 PID 
-            kp2 = input_params[5];
-            ki2 = input_params[6];
+            // kp2 = input_params[5];
+            // ki2 = input_params[6];
             current_d2 = input_params[7];
 
             // motor 2 spring coefficients 
@@ -202,10 +204,10 @@ int main (void) {
 
                 // should have hit the ball once get to 3*pi/4 
                 // resets desired angle to 0 
-                if (theta1 > 3*pi/4) {
-                    current_d1 = -km*constraint_angle + pi/3/kb;
-                    tau_d1 = current_d1*kb; 
-                }
+                // if (theta1 > 3*pi/4) {
+                //     current_d1 = -km*constraint_angle + pi/3/kb;
+                //     tau_d1 = current_d1*kb; 
+                //}
                
                 // Send data to MATLAB
                 float output_data[NUM_OUTPUTS];
