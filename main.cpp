@@ -6,7 +6,7 @@
 #include "MotorShield.h" 
 #include "HardwareSetup.h"
 
-#define NUM_INPUTS 13
+#define NUM_INPUTS 14
 #define NUM_OUTPUTS 11
 
 // (motor) constants 
@@ -57,6 +57,7 @@ float K_2 = 0;
 float D_2 = 0;
 
 float desired_forearm = 0; 
+float desired_hand = 0; 
 
 Serial pc(USBTX, USBRX);    // USB Serial Terminal
 ExperimentServer server;    // Object that lets us communicate with MATLAB
@@ -173,6 +174,7 @@ int main (void) {
             desired_forearm = input_params[10];
             t1_i = input_params[11]; 
             t2_i = input_params[12]; 
+            desired_hand = input_params[13];
             
             // Run current controller at 10kHz
             ControlLoop.attach(&current_control,0.0001);
@@ -192,10 +194,10 @@ int main (void) {
             while (t.read() < 10) {
                 // Perform impedance control loop logic to calculate desired current
                 // current_d = 0; // Set commanded current from impedance controller here.
-                tau_d1 = -K*theta1 - D*velocity1 + b * velocity1;
+                tau_d1 = -K*(desired_forearm - theta1) - D*velocity1 + b * velocity1;
                 current_d1 = tau_d1/kb; // Set commanded current from impedance controller here.
 
-                tau_d2 = -K_2*theta2 - D_2*velocity2 + b * velocity2;
+                tau_d2 = -K_2*(desired_hand - theta2) - D_2*velocity2 + b * velocity2;
                 current_d2 = tau_d2/kb;
 
                 // should have hit the ball once get to 3*pi/4 
