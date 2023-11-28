@@ -118,7 +118,7 @@ void current_control() {
         motorShield.motorAWrite(abs(duty), 1);
     }
 
-    duty2  = volt2/12.0/4;
+    duty2  = volt2/12.0/4;    
    // duty2 = 1; 
     if (duty2 >  1) {
         duty2 =  1;
