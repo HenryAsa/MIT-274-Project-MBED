@@ -49,8 +49,8 @@ float b = .00032;
 // spring coefficients for motors 
 float K = 0;
 float D = 0;
-float K2 = 0;
-float D2 = 0;
+float K_2 = 0;
+float D_2 = 0;
 
 float desired_forearm = 0; 
 
@@ -76,6 +76,12 @@ void current_control() {
     error1 = current_d1 - current1;
     sumerror1 = sumerror1 + error1;
 
+    if (sumerror1 > 3000){
+        sumerror1 = 3000;
+    } else if (sumerror1 < -3000) { 
+        sumerror1 = -30000; 
+    }
+
     // volt = 0; // EDIT THIS to use your current control law from Lab 2
     //voltage = kp*error + kd*(error-pasterror) + ki*sumerror;
     volt1 = R*current_d1 + kp*(current_d1 - current1) + ki*sumerror1 + kb*velocity1;
@@ -88,10 +94,17 @@ void current_control() {
     error2 = current_d2 - current2;
     sumerror2 = sumerror2 + error2;
 
+
+    if (sumerror2 > 3000){
+        sumerror2 = 3000;
+    } else if (sumerror2 < -3000) { 
+        sumerror2 = -30000; 
+    }
+
     volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*sumerror2+ kb*velocity1;
    
-    // duty  = volt1/12.0;
-    duty = 1; 
+    duty  = volt1/12.0/4;
+    //duty = 1; 
     if (duty >  1) {
         duty =  1;
     }
@@ -106,8 +119,8 @@ void current_control() {
         motorShield.motorAWrite(abs(duty), 1);
     }
 
-    //duty2  = volt2/12.0;
-    duty2 = 1; 
+    duty2  = volt2/12.0/4;
+   // duty2 = 1; 
     if (duty2 >  1) {
         duty2 =  1;
     }
@@ -116,10 +129,10 @@ void current_control() {
     }
 
     if (duty2 >= 0){
-        motorShield.motorAWrite(duty, 0);
+        motorShield.motorBWrite(duty2, 0);
     }
     else if (duty2 < 0){
-        motorShield.motorAWrite(abs(duty), 1);
+        motorShield.motorBWrite(abs(duty2), 1);
     }
 }
 
@@ -152,8 +165,8 @@ int main (void) {
             current_d2 = input_params[7];
 
             // motor 2 spring coefficients 
-            K2 = input_params[8];
-            D2 = input_params[9];
+            K_2 = input_params[8];
+            D_2 = input_params[9];
 
             // angle 
             desired_forearm = input_params[10];
@@ -168,7 +181,7 @@ int main (void) {
             encoderB.reset();
 
             motorShield.motorAWrite(0, 0); //turn motor A off
-           
+            motorShield.motorBWrite(0, 0); //turn motor B off
             // Use the motor shield as follows:
             // motorShield.motorAWrite(DUTY CYCLE, DIRECTION), DIRECTION = 0 is forward, DIRECTION = 1 is backwards.
              
@@ -179,7 +192,7 @@ int main (void) {
                 tau_d1 = -K*theta1 - D*velocity1 + b * velocity1;
                 current_d1 = tau_d1/kb; // Set commanded current from impedance controller here.
 
-                tau_d2 = -K*theta2 - D*velocity2 + b * velocity2;
+                tau_d2 = -K_2*theta2 - D_2*velocity2 + b * velocity2;
                 current_d2 = tau_d2/kb;
 
                 // should have hit the ball once get to 3*pi/4 
@@ -211,6 +224,7 @@ int main (void) {
             ControlLoop.detach();
             server.setExperimentComplete();
             motorShield.motorAWrite(0, 0); //turn motor A off
+            motorShield.motorBWrite(0, 0); //turn motor A off
         } // end if
     } // end while
    
