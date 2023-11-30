@@ -10,22 +10,23 @@
 #define NUM_OUTPUTS 11
 
 // (motor) constants 
-float pi = 3.1415; 
-float km = 0.5; 
-float kb = 0.16; 
-float constraint_angle = pi/2; 
+float pi = 3.1415926;
+float km = 0.5;
+float kb = 0.16;
+float constraint_angle = pi/2;
 
-//Measured values
-//motor 1
+// Measured Values
+// MOTOR 1
 float velocity1 = 0;
 float current1 = 0;
 float theta1 = 0;
-//motor 2
+
+// MOTOR 2
 float velocity2 = 0;
 float current2 = 0;
 float theta2 = 0;
 
-//Set values for PID 
+// Set values for PID 
 float current_d1 = 0;
 float current_d2 = 0;
 float current_Kp = 4.0f;         
@@ -35,31 +36,31 @@ float ki1 = 0.4f;
 float kp2 = 4.0f;
 float ki2 = 0.4f;
 
-//Controller values. 
+// Controller values
 float volt1 = 0;
 float volt2 = 0;
 float duty1 = 0;
 float duty2 = 0;
 
 float R = 3.5;
-float error1 = 0; 
-float error2 = 0; 
-float sumerror1 = 0;
-float sumerror2=0;
+float error1 = 0;
+float error2 = 0;
+float total_error1 = 0;
+float total_error2 = 0;
 float tau_d1 = 0;
 float tau_d2 = 0;
 float b = .00032;
-float t1_i = 0; 
-float t2_i = 0; 
+float t1_i = 0;
+float t2_i = 0;
 
-// spring coefficients for motors 
+// Spring Coefficients for Motors
 float K_1 = 0;
 float D_1 = 0;
 float K_2 = 0;
 float D_2 = 0;
 
-float desired_forearm = 0; 
-float desired_hand = 0; 
+float desired_forearm = 0;
+float desired_hand = 0;
 
 Serial pc(USBTX, USBRX);    // USB Serial Terminal
 ExperimentServer server;    // Object that lets us communicate with MATLAB
@@ -75,40 +76,39 @@ MotorShield motorShield(24000); // initialize the motor shield with a period of 
 
 // function to calculate motor voltage according to current control law
 void current_control() {
-    // motor 1 
+    // MOTOR A
     theta1 = encoderA.getPulses()*(6.2831/1200.0) + t1_i;
     velocity1 = encoderA.getVelocity()*(6.2831/1200.0);
     current1 = -(motorShield.readCurrentA()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
     error1 = current_d1 - current1;
-    sumerror1 = sumerror1 + error1;
+    total_error1 = total_error1 + error1;
 
-    if (sumerror1 > 3000){
-        sumerror1 = 3000;
-    } else if (sumerror1 < -3000) { 
-        sumerror1 = -30000; 
+    if (total_error1 > 3000){
+        total_error1 = 3000;
+    } else if (total_error1 < -3000) {
+        total_error1 = -30000;
     }
 
     // volt = 0; // EDIT THIS to use your current control law from Lab 2
-    //voltage = kp*error + kd*(error-pasterror) + ki*sumerror;
-    volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*sumerror1 + kb*velocity1;
+    // voltage = kp*error + kd*(error-pasterror) + ki*sumerror;
+    volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*total_error1 + kb*velocity1;
 
-    // motor 2 
-    theta2 = encoderB.getPulses()*(6.2831/1200.0) + t2_i;
+    // MOTOR B
+    theta2 = theta1 + encoderB.getPulses()*(6.2831/1200.0) + t2_i;
     velocity2 = encoderB.getVelocity()*(6.2831/1200.0);
     current2 = -(motorShield.readCurrentB()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
     error2 = current_d2 - current2;
-    sumerror2 = sumerror2 + error2;
+    total_error2 = total_error2 + error2;
 
-    if (sumerror2 > 3000){
-        sumerror2 = 3000;
-    } else if (sumerror2 < -3000) { 
-        sumerror2 = -30000; 
+    if (total_error2 > 3000){
+        total_error2 = 3000;
+    } else if (total_error2 < -3000) { 
+        total_error2 = -30000; 
     }
 
-    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*sumerror2+ kb*velocity2;
-   
+    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*total_error2+ kb*velocity2;
+
     duty1  = volt1/12.0;
-    //duty = 1; 
     if (duty1 >  1) {
         duty1 =  1;
     }
@@ -123,8 +123,7 @@ void current_control() {
         motorShield.motorAWrite(abs(duty1), 1);
     }
 
-    duty2  = volt2/12.0;    
-   // duty2 = 1; 
+    duty2  = volt2/12.0;
     if (duty2 >  1) {
         duty2 =  1;
     }
@@ -155,8 +154,8 @@ int main (void) {
         if (server.getParams(input_params, NUM_INPUTS)) {
             // Unpack inputs
             // motor 1 PID 
-            // kp = input_params[0];
-            // ki = input_params[1];
+            kp1 = input_params[0];
+            ki1 = input_params[1];
             current_d1 = input_params[2];
 
             // motor 1 spring coefficients 
@@ -164,8 +163,8 @@ int main (void) {
             D_1 = input_params[4];
 
             // motor 2 PID 
-            // kp2 = input_params[5];
-            // ki2 = input_params[6];
+            kp2 = input_params[5];
+            ki2 = input_params[6];
             current_d2 = input_params[7];
 
             // motor 2 spring coefficients 
@@ -213,19 +212,24 @@ int main (void) {
                
                 // Send data to MATLAB
                 float output_data[NUM_OUTPUTS];
+
                 output_data[0] = t.read();
+
+                // MOTOR A (ARM) DATA
                 output_data[1] = theta1;
                 output_data[2] = velocity1;
                 output_data[3] = current1;
                 output_data[4] = volt1;
-                output_data[5] = theta2;
-                output_data[6] = velocity2;
-                output_data[7] = current2;
-                output_data[8] = volt2;
-                output_data[9] = tau_d1; 
-                output_data[10] = tau_d2; 
+                output_data[5] = tau_d1;
 
-                server.sendData(output_data,NUM_OUTPUTS);              
+                // MOTOR B (HAND) DATA
+                output_data[6] = theta2;
+                output_data[7] = velocity2;
+                output_data[8] = current2;
+                output_data[9] = volt2;
+                output_data[10] = tau_d2;
+
+                server.sendData(output_data, NUM_OUTPUTS);              
                 ThisThread::sleep_for(1); //run outer control loop at 1kHz
             }
 
