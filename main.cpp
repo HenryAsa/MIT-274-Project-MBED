@@ -30,15 +30,15 @@ float current_d1 = 0;
 float current_d2 = 0;
 float current_Kp = 4.0f;         
 float current_Ki = 0.4f;   
-float kp = 4.0f;
-float ki = 0.4f;
+float kp1 = 4.0f;
+float ki1 = 0.4f;
 float kp2 = 4.0f;
 float ki2 = 0.4f;
 
 //Controller values. 
 float volt1 = 0;
 float volt2 = 0;
-float duty = 0;
+float duty1 = 0;
 float duty2 = 0;
 
 float R = 3.5;
@@ -53,8 +53,8 @@ float t1_i = 0;
 float t2_i = 0; 
 
 // spring coefficients for motors 
-float K = 0;
-float D = 0;
+float K_1 = 0;
+float D_1 = 0;
 float K_2 = 0;
 float D_2 = 0;
 
@@ -90,7 +90,7 @@ void current_control() {
 
     // volt = 0; // EDIT THIS to use your current control law from Lab 2
     //voltage = kp*error + kd*(error-pasterror) + ki*sumerror;
-    volt1 = R*current_d1 + kp*(current_d1 - current1) + ki*sumerror1 + kb*velocity1;
+    volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*sumerror1 + kb*velocity1;
 
     // motor 2 
     theta2 = encoderB.getPulses()*(6.2831/1200.0) + t2_i;
@@ -107,20 +107,20 @@ void current_control() {
 
     volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*sumerror2+ kb*velocity2;
    
-    duty  = volt1/12.0;
+    duty1  = volt1/12.0;
     //duty = 1; 
-    if (duty >  1) {
-        duty =  1;
+    if (duty1 >  1) {
+        duty1 =  1;
     }
-    if (duty < -1) {
-        duty = -1;  
+    if (duty1 < -1) {
+        duty1 = -1;  
     }
 
-    if (duty >= 0){
-        motorShield.motorAWrite(duty, 0);
+    if (duty1 >= 0){
+        motorShield.motorAWrite(duty1, 0);
     }
-    else if (duty < 0){
-        motorShield.motorAWrite(abs(duty), 1);
+    else if (duty1 < 0){
+        motorShield.motorAWrite(abs(duty1), 1);
     }
 
     duty2  = volt2/12.0;    
@@ -148,11 +148,11 @@ int main (void) {
    
     // Define array to hold input parameters from MATLAB
     float input_params[NUM_INPUTS];
-    pc.printf("%f",input_params[0]);
+    pc.printf("%f", input_params[0]);
    
     while(1) {
         // Run experiment every time input parameters are received from MATLAB
-        if (server.getParams(input_params,NUM_INPUTS)) {
+        if (server.getParams(input_params, NUM_INPUTS)) {
             // Unpack inputs
             // motor 1 PID 
             // kp = input_params[0];
@@ -160,8 +160,8 @@ int main (void) {
             current_d1 = input_params[2];
 
             // motor 1 spring coefficients 
-            K = input_params[3];
-            D = input_params[4];
+            K_1 = input_params[3];
+            D_1 = input_params[4];
 
             // motor 2 PID 
             // kp2 = input_params[5];
@@ -196,7 +196,7 @@ int main (void) {
             while (t.read() < 5) {
                 // Perform impedance control loop logic to calculate desired current
                 // current_d = 0; // Set commanded current from impedance controller here.
-                tau_d1 = K*(desired_forearm - theta1) - D*velocity1;
+                tau_d1 = K_1*(desired_forearm - theta1) - D_1*velocity1;
                 current_d1 = tau_d1/kb; // Set commanded current from impedance controller here.
 
                 tau_d2 = K_2*(desired_hand - theta2)  - D_2*velocity2;
