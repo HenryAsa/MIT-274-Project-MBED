@@ -13,7 +13,7 @@
 float pi = 3.1415; 
 float km = 0.5; 
 float kb = 0.16; 
-float constraint_angle = 0; 
+float constraint_angle = pi/2; 
 
 //Measured values
 //motor 1
@@ -202,11 +202,13 @@ int main (void) {
                 tau_d2 = K_2*(desired_hand - theta2)  - D_2*velocity2;
                 current_d2 = tau_d2/kb;
 
+                // THIS IS THE HARDSTOPPPPPPPP 
+                // THIS HAS NOT BEEN TESTED YET -- PLZ TEST WITH CAUTION 
                 // should have hit the ball once get to 3*pi/4 
                 // resets desired angle to 0 
-                // if (theta1 > 3*pi/4) {
-                //     current_d1 = -km*constraint_angle + pi/3/kb;
-                //     tau_d1 = current_d1*kb; 
+                // if (theta1 > encoderA.getPulses()*(6.2831/1200.0) + 3*pi/4) {
+                //    current_d1 = -km*constraint_angle/kb;
+                //    tau_d1 = current_d1*kb; 
                 //}
                
                 // Send data to MATLAB
