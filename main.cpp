@@ -6,7 +6,7 @@
 #include "MotorShield.h" 
 #include "HardwareSetup.h"
 
-#define NUM_INPUTS 14
+#define NUM_INPUTS 16
 #define NUM_OUTPUTS 11
 
 // (motor) constants 
@@ -33,8 +33,10 @@ float current_Kp = 4.0f;
 float current_Ki = 0.4f;   
 float kp1 = 4.0f;
 float ki1 = 0.4f;
+float kd1 = 0.0;
 float kp2 = 4.0f;
 float ki2 = 0.4f;
+float kd2 = 0.0;
 
 // Controller values
 float volt1 = 0;
@@ -89,9 +91,11 @@ void current_control() {
         total_error1 = -30000;
     }
 
-    // volt = 0; // EDIT THIS to use your current control law from Lab 2
-    // voltage = kp*error + kd*(error-pasterror) + ki*sumerror;
-    volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*total_error1 + kb*velocity1;
+    // PI CONTROLLER
+    // volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*total_error1 + kb*velocity1;
+    
+    // PID CONTROLLER
+    volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*total_error1 - kd1*velocity1 + kb*velocity1;
 
     // MOTOR B
     theta2 = theta1 + encoderB.getPulses()*(6.2831/1200.0) + t2_i;
@@ -102,11 +106,15 @@ void current_control() {
 
     if (total_error2 > 3000){
         total_error2 = 3000;
-    } else if (total_error2 < -3000) { 
+    } else if (total_error2 < -3000) {
         total_error2 = -30000; 
     }
 
-    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*total_error2+ kb*velocity2;
+    // PI CONTROLLER
+    // volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*total_error2 + kb*velocity2;
+
+    // PID CONTROLLER
+    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*total_error2 - kd2*velocity2 + kb*velocity2;
 
     duty1  = volt1/12.0;
     if (duty1 >  1) {
@@ -156,6 +164,7 @@ int main (void) {
             // motor 1 PID 
             kp1 = input_params[0];
             ki1 = input_params[1];
+            kd1 = input_params[14];
             current_d1 = input_params[2];
 
             // motor 1 spring coefficients 
@@ -165,6 +174,7 @@ int main (void) {
             // motor 2 PID 
             kp2 = input_params[5];
             ki2 = input_params[6];
+            kd2 = input_params[15];
             current_d2 = input_params[7];
 
             // motor 2 spring coefficients 
