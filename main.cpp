@@ -91,10 +91,10 @@ void current_control() {
         total_error1 = -30000;
     }
 
-    // PI CONTROLLER
+    // MOTOR A - PI CONTROLLER
     // volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*total_error1 + kb*velocity1;
     
-    // PID CONTROLLER
+    // MOTOR A - PID CONTROLLER
     volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*total_error1 - kd1*velocity1 + kb*velocity1;
 
     // MOTOR B
@@ -110,10 +110,10 @@ void current_control() {
         total_error2 = -30000; 
     }
 
-    // PI CONTROLLER
+    // MOTOR B - PI CONTROLLER
     // volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*total_error2 + kb*velocity2;
 
-    // PID CONTROLLER
+    // MOTOR B - PID CONTROLLER
     volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*total_error2 - kd2*velocity2 + kb*velocity2;
 
     duty1  = volt1/12.0;
@@ -121,7 +121,7 @@ void current_control() {
         duty1 =  1;
     }
     if (duty1 < -1) {
-        duty1 = -1;  
+        duty1 = -1;
     }
 
     if (duty1 >= 0){
@@ -161,35 +161,35 @@ int main (void) {
         // Run experiment every time input parameters are received from MATLAB
         if (server.getParams(input_params, NUM_INPUTS)) {
             // Unpack inputs
-            // motor 1 PID 
+            // MOTOR 1 PID CONTROLLER
             kp1 = input_params[0];
             ki1 = input_params[1];
             kd1 = input_params[14];
             current_d1 = input_params[2];
 
-            // motor 1 spring coefficients 
+            // MOTOR 1 SPRING COEFFICIENTS
             K_1 = input_params[3];
             D_1 = input_params[4];
 
-            // motor 2 PID 
+            // MOTOR 2 PID CONTROLLER
             kp2 = input_params[5];
             ki2 = input_params[6];
             kd2 = input_params[15];
             current_d2 = input_params[7];
 
-            // motor 2 spring coefficients 
+            // MOTOR 2 SPRING COEFFICIENTS
             K_2 = input_params[8];
             D_2 = input_params[9];
 
-            // angle 
+            // ANGLE
             desired_forearm = input_params[10];
             t1_i = input_params[11]; 
             t2_i = input_params[12]; 
             desired_hand = input_params[13];
-            
+
             // Run current controller at 10kHz
             ControlLoop.attach(&current_control,0.0001);
-           
+
             // Setup experiment
             t.reset();
             t.start();
@@ -200,7 +200,7 @@ int main (void) {
             motorShield.motorBWrite(0, 0); //turn motor B off
             // Use the motor shield as follows:
             // motorShield.motorAWrite(DUTY CYCLE, DIRECTION), DIRECTION = 0 is forward, DIRECTION = 1 is backwards.
-             
+
             // Run experiment
             while (t.read() < 5) {
                 // Perform impedance control loop logic to calculate desired current
@@ -219,7 +219,7 @@ int main (void) {
                 //    current_d1 = -km*constraint_angle/kb;
                 //    tau_d1 = current_d1*kb; 
                 //}
-               
+
                 // Send data to MATLAB
                 float output_data[NUM_OUTPUTS];
 
@@ -250,5 +250,5 @@ int main (void) {
             motorShield.motorBWrite(0, 0); //turn motor A off
         } // end if
     } // end while
-   
+
 } // end main
