@@ -6,7 +6,7 @@
 #include "MotorShield.h" 
 #include "HardwareSetup.h"
 
-#define NUM_INPUTS 16
+#define NUM_INPUTS 17
 #define NUM_OUTPUTS 11
 
 // (motor) constants 
@@ -14,6 +14,7 @@ float pi = 3.1415926;
 float km = 0.5;
 float kb = 0.16;
 float constraint_angle = pi/2;
+float duty_factor = 1.0;
 
 // Measured Values
 // MOTOR 1
@@ -29,8 +30,6 @@ float theta2 = 0;
 // Set values for PID 
 float current1_desired = 0;
 float current2_desired = 0;
-float current_Kp = 4.0f;         
-float current_Ki = 0.4f;   
 float Kp_1 = 4.0f;
 float Ki_1 = 0.4f;
 float Kd_1 = 0.0;
@@ -39,8 +38,8 @@ float Ki_2 = 0.4f;
 float Kd_2 = 0.0;
 
 // Controller values
-float volt1 = 0;
-float volt2 = 0;
+float voltage1 = 0;
+float voltage2 = 0;
 float duty1 = 0;
 float duty2 = 0;
 
@@ -92,10 +91,10 @@ void current_control() {
     }
 
     // MOTOR A - PI CONTROLLER
-    // volt1 = R*current1_desired + Kp_1*(current1_desired - current1) + Ki_1*total_error1 + kb*velocity1;
+    // voltage1 = R*current1_desired + Kp_1*(current1_desired - current1) + Ki_1*total_error1 + kb*velocity1;
     
     // MOTOR A - PID CONTROLLER
-    volt1 = R*current1_desired + Kp_1*(current1_desired - current1) + Ki_1*total_error1 - Kd_1*velocity1 + kb*velocity1;
+    voltage1 = R*current1_desired + Kp_1*(current1_desired - current1) + Ki_1*total_error1 - Kd_1*velocity1 + kb*velocity1;
 
     // MOTOR B
     theta2 = theta1 + encoderB.getPulses()*(6.2831/1200.0) + theta2_init;
@@ -111,13 +110,13 @@ void current_control() {
     }
 
     // MOTOR B - PI CONTROLLER
-    // volt2 = R*current2_desired + Kp_2*(current2_desired - current2) + Ki_2*total_error2 + kb*velocity2;
+    // voltage2 = R*current2_desired + Kp_2*(current2_desired - current2) + Ki_2*total_error2 + kb*velocity2;
 
     // MOTOR B - PID CONTROLLER
-    volt2 = R*current2_desired + Kp_2*(current2_desired - current2) + Ki_2*total_error2 - Kd_2*velocity2 + kb*velocity2;
+    voltage2 = R*current2_desired + Kp_2*(current2_desired - current2) + Ki_2*total_error2 - Kd_2*velocity2 + kb*velocity2;
 
-    duty1  = volt1/12.0;
-    if (duty1 >  1) {
+    duty1  = voltage1/12.0 * duty_factor;
+    if (duty1 > 1) {
         duty1 = 1;
     }
     if (duty1 < -1) {
@@ -131,7 +130,7 @@ void current_control() {
         motorShield.motorAWrite(abs(duty1), 1);
     }
 
-    duty2  = volt2/12.0;
+    duty2  = voltage2/12.0 * duty_factor;
     if (duty2 > 1) {
         duty2 = 1;
     }
@@ -186,6 +185,9 @@ int main (void) {
             theta2_init = input_params[12]; 
             desired_hand = input_params[13];
 
+            // MISCELLANEOUS
+            duty_factor = input_params[16];
+
             // Run current controller at 10kHz
             ControlLoop.attach(&current_control,0.0001);
 
@@ -230,14 +232,14 @@ int main (void) {
                 output_data[1] = theta1;
                 output_data[2] = velocity1;
                 output_data[3] = current1;
-                output_data[4] = volt1;
+                output_data[4] = voltage1;
                 output_data[5] = tau_d1;
 
                 // MOTOR B (HAND) DATA
                 output_data[6] = theta2;
                 output_data[7] = velocity2;
                 output_data[8] = current2;
-                output_data[9] = volt2;
+                output_data[9] = voltage2;
                 output_data[10] = tau_d2;
 
                 server.sendData(output_data, NUM_OUTPUTS);              
