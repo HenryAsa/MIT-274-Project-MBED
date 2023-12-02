@@ -107,7 +107,7 @@ void current_control() {
     if (total_error2 > 3000){
         total_error2 = 3000;
     } else if (total_error2 < -3000) {
-        total_error2 = -30000; 
+        total_error2 = -3000;
     }
 
     // MOTOR B - PI CONTROLLER
