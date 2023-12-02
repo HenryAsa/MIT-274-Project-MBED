@@ -27,16 +27,16 @@ float current2 = 0;
 float theta2 = 0;
 
 // Set values for PID 
-float current_d1 = 0;
-float current_d2 = 0;
+float current1_desired = 0;
+float current2_desired = 0;
 float current_Kp = 4.0f;         
 float current_Ki = 0.4f;   
-float kp1 = 4.0f;
-float ki1 = 0.4f;
-float kd1 = 0.0;
-float kp2 = 4.0f;
-float ki2 = 0.4f;
-float kd2 = 0.0;
+float Kp_1 = 4.0f;
+float Ki_1 = 0.4f;
+float Kd_1 = 0.0;
+float Kp_2 = 4.0f;
+float Ki_2 = 0.4f;
+float Kd_2 = 0.0;
 
 // Controller values
 float volt1 = 0;
@@ -52,8 +52,8 @@ float total_error2 = 0;
 float tau_d1 = 0;
 float tau_d2 = 0;
 float b = .00032;
-float t1_i = 0;
-float t2_i = 0;
+float theta1_init = 0;
+float theta2_init = 0;
 
 // Spring Coefficients for Motors
 float K_1 = 0;
@@ -79,10 +79,10 @@ MotorShield motorShield(24000); // initialize the motor shield with a period of 
 // function to calculate motor voltage according to current control law
 void current_control() {
     // MOTOR A
-    theta1 = encoderA.getPulses()*(6.2831/1200.0) + t1_i;
+    theta1 = encoderA.getPulses()*(6.2831/1200.0) + theta1_init;
     velocity1 = encoderA.getVelocity()*(6.2831/1200.0);
     current1 = -(motorShield.readCurrentA()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
-    error1 = current_d1 - current1;
+    error1 = current1_desired - current1;
     total_error1 = total_error1 + error1;
 
     if (total_error1 > 3000){
@@ -92,16 +92,16 @@ void current_control() {
     }
 
     // MOTOR A - PI CONTROLLER
-    // volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*total_error1 + kb*velocity1;
+    // volt1 = R*current1_desired + Kp_1*(current1_desired - current1) + Ki_1*total_error1 + kb*velocity1;
     
     // MOTOR A - PID CONTROLLER
-    volt1 = R*current_d1 + kp1*(current_d1 - current1) + ki1*total_error1 - kd1*velocity1 + kb*velocity1;
+    volt1 = R*current1_desired + Kp_1*(current1_desired - current1) + Ki_1*total_error1 - Kd_1*velocity1 + kb*velocity1;
 
     // MOTOR B
-    theta2 = theta1 + encoderB.getPulses()*(6.2831/1200.0) + t2_i;
+    theta2 = theta1 + encoderB.getPulses()*(6.2831/1200.0) + theta2_init;
     velocity2 = encoderB.getVelocity()*(6.2831/1200.0);
     current2 = -(motorShield.readCurrentB()*(30.0/65536.0)-15.0); //read current for motor A in amps. Note: this is a slightly different current sensor so its a different conversion than last lab.            
-    error2 = current_d2 - current2;
+    error2 = current2_desired - current2;
     total_error2 = total_error2 + error2;
 
     if (total_error2 > 3000){
@@ -111,14 +111,14 @@ void current_control() {
     }
 
     // MOTOR B - PI CONTROLLER
-    // volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*total_error2 + kb*velocity2;
+    // volt2 = R*current2_desired + Kp_2*(current2_desired - current2) + Ki_2*total_error2 + kb*velocity2;
 
     // MOTOR B - PID CONTROLLER
-    volt2 = R*current_d2 + kp2*(current_d2 - current2) + ki2*total_error2 - kd2*velocity2 + kb*velocity2;
+    volt2 = R*current2_desired + Kp_2*(current2_desired - current2) + Ki_2*total_error2 - Kd_2*velocity2 + kb*velocity2;
 
     duty1  = volt1/12.0;
     if (duty1 >  1) {
-        duty1 =  1;
+        duty1 = 1;
     }
     if (duty1 < -1) {
         duty1 = -1;
@@ -132,8 +132,8 @@ void current_control() {
     }
 
     duty2  = volt2/12.0;
-    if (duty2 >  1) {
-        duty2 =  1;
+    if (duty2 > 1) {
+        duty2 = 1;
     }
     if (duty2 < -1) {
         duty2 = -1;  
@@ -155,27 +155,26 @@ int main (void) {
    
     // Define array to hold input parameters from MATLAB
     float input_params[NUM_INPUTS];
-    pc.printf("%f", input_params[0]);
    
     while(1) {
         // Run experiment every time input parameters are received from MATLAB
         if (server.getParams(input_params, NUM_INPUTS)) {
             // Unpack inputs
             // MOTOR 1 PID CONTROLLER
-            kp1 = input_params[0];
-            ki1 = input_params[1];
-            kd1 = input_params[14];
-            current_d1 = input_params[2];
+            Kp_1 = input_params[0];
+            Ki_1 = input_params[1];
+            Kd_1 = input_params[14];
+            current1_desired = input_params[2];
 
             // MOTOR 1 SPRING COEFFICIENTS
             K_1 = input_params[3];
             D_1 = input_params[4];
 
             // MOTOR 2 PID CONTROLLER
-            kp2 = input_params[5];
-            ki2 = input_params[6];
-            kd2 = input_params[15];
-            current_d2 = input_params[7];
+            Kp_2 = input_params[5];
+            Ki_2 = input_params[6];
+            Kd_2 = input_params[15];
+            current2_desired = input_params[7];
 
             // MOTOR 2 SPRING COEFFICIENTS
             K_2 = input_params[8];
@@ -183,8 +182,8 @@ int main (void) {
 
             // ANGLE
             desired_forearm = input_params[10];
-            t1_i = input_params[11]; 
-            t2_i = input_params[12]; 
+            theta1_init = input_params[11]; 
+            theta2_init = input_params[12]; 
             desired_hand = input_params[13];
 
             // Run current controller at 10kHz
@@ -195,6 +194,8 @@ int main (void) {
             t.start();
             encoderA.reset();
             encoderB.reset();
+            // encoderC.reset();
+            // encoderD.reset();
 
             motorShield.motorAWrite(0, 0); //turn motor A off
             motorShield.motorBWrite(0, 0); //turn motor B off
@@ -206,18 +207,18 @@ int main (void) {
                 // Perform impedance control loop logic to calculate desired current
                 // current_d = 0; // Set commanded current from impedance controller here.
                 tau_d1 = K_1*(desired_forearm - theta1) - D_1*velocity1;
-                current_d1 = tau_d1/kb; // Set commanded current from impedance controller here.
+                current1_desired = tau_d1/kb; // Set commanded current from impedance controller here.
 
-                tau_d2 = K_2*(desired_hand - theta2)  - D_2*velocity2;
-                current_d2 = tau_d2/kb;
+                tau_d2 = K_2*(desired_hand - theta2) - D_2*velocity2;
+                current2_desired = tau_d2/kb;
 
                 // THIS IS THE HARDSTOPPPPPPPP 
                 // THIS HAS NOT BEEN TESTED YET -- PLZ TEST WITH CAUTION 
                 // should have hit the ball once get to 3*pi/4 
                 // resets desired angle to 0 
                 // if (theta1 > encoderA.getPulses()*(6.2831/1200.0) + 3*pi/4) {
-                //    current_d1 = -km*constraint_angle/kb;
-                //    tau_d1 = current_d1*kb; 
+                //    current1_desired = -km*constraint_angle/kb;
+                //    tau_d1 = current1_desired*kb; 
                 //}
 
                 // Send data to MATLAB
