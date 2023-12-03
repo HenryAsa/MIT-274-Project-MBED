@@ -43,7 +43,7 @@ float voltage2 = 0;
 float duty1 = 0;
 float duty2 = 0;
 
-float R = 3.5;
+float R = 12.0/3.1;
 float error1 = 0;
 float error2 = 0;
 float total_error1 = 0;
@@ -87,7 +87,7 @@ void current_control() {
     if (total_error1 > 3000){
         total_error1 = 3000;
     } else if (total_error1 < -3000) {
-        total_error1 = -30000;
+        total_error1 = -3000;
     }
 
     // MOTOR A - PI CONTROLLER
@@ -207,11 +207,12 @@ int main (void) {
             // Run experiment
             while (t.read() < 5) {
                 // Perform impedance control loop logic to calculate desired current
-                // current_d = 0; // Set commanded current from impedance controller here.
                 tau_d1 = K_1*(desired_forearm - theta1) - D_1*velocity1;
+                // tau_d1 = -K_1*theta1 - D_1*velocity1;
                 current1_desired = tau_d1/kb; // Set commanded current from impedance controller here.
 
                 tau_d2 = K_2*(desired_hand - theta2) - D_2*velocity2;
+                // tau_d2 = -K_2*theta2 - D_2*velocity2;
                 current2_desired = tau_d2/kb;
 
                 // THIS IS THE HARDSTOPPPPPPPP 
